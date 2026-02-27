@@ -6,7 +6,7 @@ app.use(express.json());
 app.set('trust proxy', true);
 
 // Список разрешенных стран (ISO коды)
-const ALLOWED_COUNTRIES = ['US', 'CA', 'GB', 'DE', 'FR']; // Замените на свои
+const ALLOWED_COUNTRIES = ['RU']; // Замените на свои
 
 // Пороговая дата для сравнения
 const THRESHOLD_DATE = '25.02.2026';
