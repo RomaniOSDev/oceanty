@@ -46,11 +46,11 @@ function isDateValid(dateStr) {
 // Middleware для проверки
 app.post('/api/check', async (req, res) => {
   try {
-    // 1. Получаем параметры из запроса
-    const { deviceType, appVersion, clientDate } = req.body;
+    // 1. Получаем параметры из запроса (только appVersion и clientDate)
+    const { appVersion, clientDate } = req.body;
     
-    // Проверяем наличие всех параметров
-    if (!deviceType || !appVersion || !clientDate) {
+    // Проверяем наличие параметров
+    if (!appVersion || !clientDate) {
       return res.status(400).json({ 
         ocean: false, 
         my: "", 
@@ -64,16 +64,27 @@ app.post('/api/check', async (req, res) => {
                   || req.ip 
                   || req.socket.remoteAddress;
     
-    console.log(`Request from IP: ${userIP}, Device: ${deviceType}, App Version: ${appVersion}, Date: ${clientDate}`);
+    console.log(`Request from IP: ${userIP}, App Version: ${appVersion}, Date: ${clientDate}`);
     
     // 3. Определяем страну по IP
     const countryCode = await getCountryFromIP(userIP);
     
-    // 4. Проверяем условия (ТОЛЬКО страна и дата)
-    const isIPAllowed = countryCode && ALLOWED_COUNTRIES.includes(countryCode);
+    // 4. Проверяем условия (сначала дата, потом IP)
     const isDateValidFlag = isDateValid(clientDate);
     
-    console.log(`Country: ${countryCode}, IP Allowed: ${isIPAllowed}, Date Valid: ${isDateValidFlag}`);
+    // Если дата не прошла проверку - сразу false
+    if (!isDateValidFlag) {
+      console.log(`Date validation failed: ${clientDate} < ${THRESHOLD_DATE}`);
+      return res.json({
+        ocean: false,
+        my: "",
+        ty: ""
+      });
+    }
+    
+    // Дата ок - проверяем IP
+    const isIPAllowed = countryCode && ALLOWED_COUNTRIES.includes(countryCode);
+    console.log(`Date OK, Country: ${countryCode}, IP Allowed: ${isIPAllowed}`);
     
     // 5. Формируем ответ
     let response = {
@@ -82,8 +93,7 @@ app.post('/api/check', async (req, res) => {
       ty: ""
     };
     
-    // Оба условия должны быть true
-    if (isIPAllowed && isDateValidFlag) {
+    if (isIPAllowed) {
       response = {
         ocean: true,
         my: "google",
@@ -117,5 +127,5 @@ app.get('/health', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Threshold date set to: ${THRESHOLD_DATE}`);
-  console.log(`Checking only: IP country and date (device type ignored)`);
+  console.log(`Checking order: 1. Date, 2. IP country`);
 });
