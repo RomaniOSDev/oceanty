@@ -6,7 +6,7 @@ app.use(express.json());
 app.set('trust proxy', true);
 
 // Список разрешенных стран (ISO коды)
-const ALLOWED_COUNTRIES = ['US', 'RU']; // Замените на свои
+const ALLOWED_COUNTRIES = ['US', 'CA', 'GB', 'DE', 'FR']; // Замените на свои
 
 // Пороговая дата для сравнения
 const THRESHOLD_DATE = '25.02.2026';
@@ -69,12 +69,11 @@ app.post('/api/check', async (req, res) => {
     // 3. Определяем страну по IP
     const countryCode = await getCountryFromIP(userIP);
     
-    // 4. Проверяем условия
+    // 4. Проверяем условия (ТОЛЬКО страна и дата)
     const isIPAllowed = countryCode && ALLOWED_COUNTRIES.includes(countryCode);
-    const isDeviceAllowed = deviceType === 'iPhone' || deviceType === 'iOS';
     const isDateValidFlag = isDateValid(clientDate);
     
-    console.log(`Country: ${countryCode}, IP Allowed: ${isIPAllowed}, Device Allowed: ${isDeviceAllowed}, Date Valid: ${isDateValidFlag}`);
+    console.log(`Country: ${countryCode}, IP Allowed: ${isIPAllowed}, Date Valid: ${isDateValidFlag}`);
     
     // 5. Формируем ответ
     let response = {
@@ -83,8 +82,8 @@ app.post('/api/check', async (req, res) => {
       ty: ""
     };
     
-    // Все условия должны быть true
-    if (isIPAllowed && isDeviceAllowed && isDateValidFlag) {
+    // Оба условия должны быть true
+    if (isIPAllowed && isDateValidFlag) {
       response = {
         ocean: true,
         my: "google",
@@ -118,4 +117,5 @@ app.get('/health', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Threshold date set to: ${THRESHOLD_DATE}`);
+  console.log(`Checking only: IP country and date (device type ignored)`);
 });
